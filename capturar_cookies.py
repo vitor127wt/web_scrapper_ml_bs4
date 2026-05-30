@@ -1,6 +1,9 @@
 import json
+import os
+
 
 def cookies(filePath: str) -> list:
+    criar_pasta()
     with open(filePath, 'r', encoding='utf-8') as f:
         cookies_raw = json.load(f)
         f.close()
@@ -9,12 +12,17 @@ def cookies(filePath: str) -> list:
 
     for cookie in cookies_raw:
         new_cookie = cookie.copy()
-        
+
         valor_sameSite = str(new_cookie['sameSite']).capitalize()
-        
+
         if valor_sameSite in ["Strict", "Lax", "None"]:
             new_cookie['sameSite'] = valor_sameSite
         else:
             del new_cookie['sameSite']
         cookies.append(new_cookie)
     return cookies
+
+
+def criar_pasta():
+    if not os.path.exists('cookies'):
+        os.mkdir('cookies')
