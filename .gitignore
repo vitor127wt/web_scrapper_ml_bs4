@@ -1,2 +1,4 @@
 .env
 .vscode
+.cookies
+extrair_produtos.py
