@@ -2,31 +2,42 @@
 from playwright.sync_api import sync_playwright
 from playwright_stealth import Stealth
 from capturar_cookies import cookies
+from playwright.sync_api._generated import Page
+from playwright._impl._browser_context import BrowserContext
+from playwright._impl._browser_context import Browser
 
 
 path_cookies = None
 cookies_list = cookies(path_cookies)
 
 
-def criar_navegador():
-    with sync_playwright() as p:
-        navegador = p.chromium.launch(headless=True)
-
-        contexto = navegador.new_context(
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
-            viewport={"width": 1920, "height": 1080},
-            extra_http_headers={
-                "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": '"Windows"',
-                "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
-            }
-        )
-        contexto.add_cookies(cookies=cookies_list)
-        return contexto
+def instanciar_browser(headless: bool = True) -> Browser:
+    if headless:
+        with sync_playwright() as p:
+            navegador = p.chromium.launch(headless=True)
+        return navegador
+    else:
+        with sync_playwright() as p:
+            navegador = p.chromium.launch(headless=False)
+        return navegador
 
 
-def criar_aba(contexto: function):
+async def criar_contexto(navegador: Browser) -> BrowserContext:
+    contexto = navegador.new_context(
+        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
+        viewport={"width": 1920, "height": 1080},
+        extra_http_headers={
+            "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
+        }
+    )
+    contexto.add_cookies(cookies=cookies_list)
+    return contexto
+
+
+async def criar_aba(contexto: BrowserContext) -> Page:
     aba = contexto.new_page()
     stealth = Stealth()
     stealth.apply_stealth_sync(aba)
