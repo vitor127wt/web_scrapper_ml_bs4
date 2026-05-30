@@ -10,7 +10,6 @@ url = f'https://lista.mercadolivre.com.br/{item}'
 navegador = criar_navegador()
 aba = criar_aba(navegador)
 
-
 try:
     aba.goto(url=url, wait_until='networkidle')
 
