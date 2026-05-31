@@ -9,7 +9,7 @@ import random
 import socket
 import asyncio
 import browser_create
-
+from buscar_produtos import buscar
 LIMITE_TASKS = 3
 MAX_THREADS = 3
 CONCORRENCIA_GLOBAL = 4
@@ -41,7 +41,7 @@ def alocar_porta_livre():
     # Aloca uma porta UDP livre no sistema
     sock = sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('127.0.0.1', 0))
-    porta = sock.getsockname()[11]
+    porta = sock.getsockname()[1]
     sock.close()
     return porta
 
@@ -56,6 +56,8 @@ async def nova_task(browser, item, nome_task, porta_thread):
     contexto = browser_create.criar_contexto(browser)
 
     aba = browser_create.criar_aba(contexto)
+
+    produtos = buscar(item=item, aba=aba)
 
 
 async def main_thread_loop(nome_thread, item_inicial):
@@ -141,7 +143,6 @@ if __name__ == '__main__':
             break
         if item:
             item_formatado = item.replace(' ', '-')
-            url_busca = f'https://lista.mercadolivre.com.br/{item_formatado}'
 
             fila_busca.put(item_formatado)
             print(f'Item {item_formatado} inserido na fila')

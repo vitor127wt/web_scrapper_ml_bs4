@@ -4,7 +4,6 @@ from playwright_stealth import Stealth
 from capturar_cookies import cookies
 from playwright.sync_api._generated import Page
 from playwright._impl._browser_context import BrowserContext
-from playwright._impl._browser_context import Browser
 
 
 path_cookies = r'.\cookies\cookies_ML.json'
