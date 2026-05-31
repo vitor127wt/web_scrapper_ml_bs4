@@ -7,7 +7,7 @@ from playwright._impl._browser_context import BrowserContext
 from playwright._impl._browser_context import Browser
 
 
-path_cookies = None
+path_cookies = r'.\cookies\cookies_ML.json'
 cookies_list = cookies(path_cookies)
 
 

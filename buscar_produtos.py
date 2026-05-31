@@ -5,7 +5,6 @@ import controlar_aba
 from bs4._typing import _SomeTags
 from bs4._typing import _AtMostOneTag
 from bs4.element import PageElement
-from playwright._impl._browser_context import Browser
 from browser_create import criar_contexto, criar_aba
 produtos = []
 
