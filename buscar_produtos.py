@@ -5,16 +5,17 @@ import controlar_aba
 from bs4._typing import _SomeTags
 from bs4._typing import _AtMostOneTag
 from bs4.element import PageElement
-from browser_create import criar_contexto, criar_aba
+from browser_create_abandonado import criar_contexto, criar_aba
 produtos = []
 
 
-async def buscar(item: str, aba: Page, paginas: int = 1):
+def buscar(item: str, aba: Page, paginas: int = 1):
     global produtos
-    await controlar_aba.carregar_pagina(aba=aba, url=f'https://lista.mercadolivre.com.br/{item}')
-    await controlar_aba.scroll_pagina(aba=aba, quantidade=10)
+    controlar_aba.carregar_pagina(
+        aba=aba, url=f'https://lista.mercadolivre.com.br/{item}')
+    controlar_aba.scroll_pagina(aba=aba, quantidade=10)
     for _ in range(paginas):
-        pure_html = await aba.content()
+        pure_html = aba.content()
         raw_html = BeautifulSoup(pure_html, 'html.parser')
         cards = extrair_cards(raw_html)
         extrair_produtos(cards=cards)

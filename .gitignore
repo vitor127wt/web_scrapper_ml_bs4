@@ -3,3 +3,4 @@
 *.html
 *.json
 __pycache__/
+testes/

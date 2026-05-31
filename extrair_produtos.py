@@ -1,150 +1,242 @@
+import json
+import re
+import pprint
+from pathlib import Path
+from bs4 import BeautifulSoup
 
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
+
+def gerar_lista_produtos(html: str):
+    json_limpo_raw = extrair_json_limpo(html=html)
+    produtos_dict_raw = gerar_dicionario_de_produtos(json_limpo_raw)
+    urls_imagens = extrair_links_imagens(json_limpo_raw)
+    produtos_dict_limpos = gerar_produtos_limpos(
+        produtos_dict_raw, urls_imagens)
+    return produtos_dict_limpos
 
 
-def extrair_produtos(navegador: function) -> list:
-    grid = extrair_grid(navegador=navegador)
-    cards = extrair_cards(grid=grid)
-    produtos = [
-        extrair_produto(card=card) for card in cards
-    ]
+def extrair_json_limpo(html: str):
+    soup = BeautifulSoup(html, 'html.parser')
+
+    script_tag = soup.find(
+        'script', id='__NORDIC_RENDERING_CTX__')
+
+    conteudo_script_string = script_tag.string
+    match = re.search(r'_n\.ctx\.r\s*=\s*({)', conteudo_script_string)
+
+    if not match:
+        print('Match nao achou nada')
+        return None
+
+    inicio_json = match.start(1)
+    contador_chaves = 0
+    posicao_final = 0
+
+    for i in range(inicio_json, len(conteudo_script_string)):
+        char = conteudo_script_string[i]
+        if char == r'{':
+            contador_chaves += 1
+        elif char == r'}':
+            contador_chaves -= 1
+        if contador_chaves == 0:
+            posicao_final = i + 1
+            break
+
+    if posicao_final > inicio_json:
+        return conteudo_script_string[inicio_json:posicao_final]
+    else:
+        return None
+
+
+def gerar_dicionario_de_produtos(json_limpo_str: str) -> dict:
+
+    json_dict = json.loads(json_limpo_str)
+    resultados = json_dict['appProps']['sharedState']['search']['results']
+    produtos_list = []
+
+    for index, card in enumerate(resultados):
+        produto_tmp = {}
+        if card.get('polycard'):
+            produto_tmp['id'] = card.get('polycard').get('metadata').get('id')
+            componente = card.get('polycard').get('components')
+
+            for item in componente:
+                produto_tmp[f'{item['type']}'] = item
+            produtos_list.append(produto_tmp)
+    with open('prova.json', 'w', encoding='utf-8') as f:
+        json.dump(produtos_list, f, ensure_ascii=False)
+    return produtos_list
+
+
+def extrair_links_imagens(json_limpo_str: str) -> dict:
+    imagens_links = {}
+    json_dict = json.loads(json_limpo_str)
+    lista_produtos = json_dict['appProps']['pageProps']['initialState']['seo']['schema']['product_list']
+    for i, item in enumerate(lista_produtos):
+        imagens_links[f'{i}-produto'] = {
+            'id_dados': item.get('id'),
+            'name': item.get('name'),
+            'url': item.get('item_offered').get('url'),
+            'image': item.get('image')
+        }
+    return imagens_links
+
+
+def gerar_produtos_limpos(produtos_raw: list, urls_imagens_raw: dict) -> dict:
+    produtos = []
+    for item in urls_imagens_raw:
+        produtos.append({
+            'id': urls_imagens_raw[item].get('id_dados'),
+            'name': None,
+            'url': urls_imagens_raw[item].get('url'),
+            'image': urls_imagens_raw[item].get('image'),
+            'valor': None,
+            'desconto': None,
+            'desconto_condition': None,
+            'parcelamento': None,
+            'sem_juros': None,
+            'frete': None,
+            'full': None,
+            'internacional': None
+        })
+    for item in produtos:
+        item['name'] = pegar_name(produtos_raw, id=item['id'])
+        item['valor'] = pegar_valor(produtos_raw, id=item['id'])
+        item['desconto'] = pegar_desconto(produtos_raw, id=item['id'])
+        item['desconto_condition'] = pegar_desconto_condition(
+            produtos_raw, id=item['id'])
+        item['parcelamento'] = pegar_parcelamento(produtos_raw, id=item['id'])
+        item['sem_juros'] = pegar_juros(produtos_raw, id=item['id'])
+        item['frete'] = pegar_frete(produtos_raw, id=item['id'])
+        item['full'] = pegar_full(produtos_raw, id=item['id'])
+        item['internacional'] = pegar_internacional(
+            produtos_raw, id=item['id'])
     return produtos
 
 
-def extrair_grid(navegador: function):
-    grid = navegador.find_element(By.XPATH, '//*[@id="root-app"]/div/div[1]/section/ol')
-    return grid
-
-def extrair_cards(grid):
-    cards = grid.find_elements(By.CLASS_NAME, 'poly-card__content')
-    return cards
-
-def extrair_produto(card) -> dict:
-    parcelamento = extrair_parcelamento(card=card)
-    frete = extrair_frete(card=card)
-    produto = {
-        'nome' : extrair_nome(card=card),
-        'preço' : extrair_valor(card=card),
-        'desconto' : extrair_desconto(card=card),
-        'parcelamento_vezes' : parcelamento['vezes'],
-        'parcelamento_sem_juros' : parcelamento['sem_juros'],
-        'frete_gratis' : frete['frete'],
-        'frete_full' : frete['full'],
-        'condicao' : extrair_condicao(card=card),
-        'link' : extrair_link(card=card)
-        
-    }
-    return produto
-
-def extrair_nome(card) -> str:
-    titulo = card.find_element(By.CLASS_NAME, 'poly-component__title-wrapper')
-    return titulo.text
-
-def extrair_valor(card) -> float:
-    reais = converter_reais(card=card)
-    centavos = converter_centavos(card=card)
-    
-    valor = float(f'{reais}.{centavos}')
-    return valor
-
-
-def converter_reais(card):
-    reais_element = card.find_element(By.CLASS_NAME, 'poly-price__current')
-    reais_element_current = reais_element.find_element(By.CSS_SELECTOR, 'span.andes-money-amount__fraction')
-    reais_str = reais_element_current.text
-    new_reais = ''
-    for char in reais_str:
-        if char.isdigit():
-            new_reais += char
-    return new_reais
-
-
-def converter_centavos(card):
-    centavos_element = card.find_element(By.CLASS_NAME, 'poly-price__current')
-    try:
-        centavos_element_current = centavos_element.find_element(By.CSS_SELECTOR, 'span.andes-money-amount__cents.andes-money-amount__cents--superscript-24')
-    except NoSuchElementException:
-        centavos_element_current = '00'
-    if centavos_element_current != '00':
-        return centavos_element_current.text
-    return centavos_element_current
-
-def extrair_desconto(card) -> bool | str:
-    try:
-        desconto_element = card.find_element(By.CLASS_NAME, 'poly-price__disc_label')
-    except NoSuchElementException, ValueError:
-        return 0
-    desconto_str = f'{desconto_element.text}'
-    desconto_dig = '0'
-    for char in desconto_str:
-        if char.isdigit():
-            desconto_dig += char
-    if desconto_dig == '0':
-        return 0
-    return int(desconto_dig)
-
-def extrair_parcelamento(card):
-    try:
-        parcelamento_element = card.find_element(By.CLASS_NAME, 'poly-price__installments')
-    except NoSuchElementException:
-        return {'vezes' : 0,
-                'sem_juros' : False}
-    parcelamento_str = f'{parcelamento_element.text}'
-    parcelamento_vezes = ''
-    parcelamento_sem_juros = False
-    for char in parcelamento_str:
-        if char == 'x':
-            break
-        if char.isdigit():
-            parcelamento_vezes += char
-    if 'sem juros' in parcelamento_str:
-        parcelamento_sem_juros = True
-    if int(parcelamento_vezes) > 24:
-        parcelamento_vezes = 0
-    
-    return {'vezes' : parcelamento_vezes,
-            'sem_juros' : parcelamento_sem_juros}
-
-
-def extrair_frete(card):
-    try:
-        frete_element = card.find_element(By.CLASS_NAME, 'poly-shipping-v2__item')
-    except NoSuchElementException:
-        return {'frete': False,
-            'full': False}
-    try:
-        frete_gratis_element = frete_element.find_element(By.TAG_NAME, 'span')
-        frete_gratis_str = f'{frete_gratis_element.text}'
-    except:
-        frete_gratis_str = f'Sem Frete Gratis'
-    try:
-        frete_full_element = frete_element.find_element(By.TAG_NAME, 'svg')
-    except NoSuchElementException:
-        frete_full_element = False
-    if frete_full_element:
-        frete_full_text = frete_full_element.get_attribute('aria-label')
-        return {'frete' : frete_gratis_str,
-                'full': frete_full_text}
-    return {'frete': frete_gratis_str,
-            'full': frete_full_element}
-    
-def extrair_condicao(card):
-    try:
-        usado_element = card.find_element(By.CLASS_NAME, 'poly-component__item-condition')
-    except NoSuchElementException:
-        usado = False
-        return usado
-    usado_str = f'{usado_element.text}'
-    if 'usado' in usado_str:
-        usado = True
-        return usado
+def checar_id(id_1: str, id_2):
+    if id_1 == id_2:
+        return True
     return False
 
-def extrair_link(card):
-    titulo = card.find_element(By.CLASS_NAME, 'poly-component__title-wrapper')
-    link_element = titulo.find_element(By.TAG_NAME, 'a')
-    link = link_element.get_attribute('href')
-    return link
+
+def pegar_name(produtos_raw: list, id: str):
+    for item in produtos_raw:
+        if checar_id(item['id'], id):
+            return item['title']['title']['text']
+    return None
 
 
+def pegar_valor(produtos_raw: list, id: str):
+    for item in produtos_raw:
+        if checar_id(item['id'], id):
+            return item['price']['price']['current_price']['value']
+    return None
+
+
+def pegar_desconto(produtos_raw: list, id: str):
+    for item in produtos_raw:
+        if checar_id(item['id'], id):
+            try:
+                desconto_raw = item['price']['price']['discount_label']['text']
+                desconto_limpo = ''
+                for c in desconto_raw:
+                    if c.isdigit():
+                        desconto_limpo += c
+                return desconto_limpo
+            except:
+                return None
+    return None
+
+
+def pegar_desconto_condition(produtos_raw: list, id: str):
+    for item in produtos_raw:
+        if checar_id(item['id'], id):
+            try:
+                id.isalpha
+                desconto_raw = item['price']['price']['discount_label']['text']
+                desconto_condition_limpo = ''
+                for c in desconto_raw:
+                    if c.isalpha() and c != '%':
+                        desconto_condition_limpo += c
+                return desconto_condition_limpo.strip()
+            except:
+                return None
+    return None
+
+
+def pegar_parcelamento(produtos_raw: list, id: str):
+    for item in produtos_raw:
+        if checar_id(item['id'], id):
+            try:
+                parcelamento_raw = item['price']['price']['installments']['text']
+                parcelamento_limpo = ''
+                for c in parcelamento_raw:
+                    if c.isdigit():
+                        parcelamento_limpo += c
+                if parcelamento_limpo.isdigit():
+                    return int(parcelamento_limpo)
+                return parcelamento_limpo
+            except:
+                return 0
+    return 0
+
+
+def pegar_juros(produtos_raw: list, id: str):
+    for item in produtos_raw:
+        if checar_id(item['id'], id):
+            try:
+                juros = item['price']['price']['installments']['no_interest']
+                return juros
+            except:
+                return False
+    return False
+
+
+def pegar_frete(produtos_raw: list, id: str):
+    for item in produtos_raw:
+        if checar_id(item['id'], id):
+            try:
+                frete = item['shipping_v2']['shipping_v2'][0]['values'][0]['pill']['text']
+                return frete
+            except:
+                return False
+    return False
+
+
+def pegar_full(produtos_raw: list, id: str):
+    for item in produtos_raw:
+        if checar_id(item['id'], id):
+            try:
+                full = item['shipping_v2']['shipping_v2'][0]['values'][1]['icon']['alt_text']
+
+                return full
+            except:
+                return False
+    return False
+
+
+def pegar_internacional(produtos_raw: list, id: str):
+    for item in produtos_raw:
+        if checar_id(item['id'], id):
+            try:
+                internacional = item['cbt']['cbt']['alt_text']
+                if internacional:
+                    return True
+            except:
+                return False
+    return False
+
+
+caminho = Path(__file__).resolve().parent / 'testes'
+
+html_f = caminho / 'html.html'
+
+json_f = caminho / 'teste.json'
+
+with open(html_f, 'r', encoding='utf-8') as f:
+    html = f.read()
+
+lista = gerar_lista_produtos(html)
+
+with open(json_f, 'w', encoding='utf-8') as j:
+    json.dump(lista, j, ensure_ascii=False)

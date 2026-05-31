@@ -16,7 +16,7 @@ cookies_list = cookies(path_cookies)
 #         return navegador
 
 
-async def criar_contexto(navegador: Browser) -> BrowserContext:
+async def criar_contexto(navegador) -> BrowserContext:
     contexto = await navegador.new_context(
         user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
         viewport={"width": 1920, "height": 1080},
