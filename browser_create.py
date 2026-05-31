@@ -1,5 +1,5 @@
 
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 from capturar_cookies import cookies
 from playwright.sync_api._generated import Page
@@ -11,14 +11,9 @@ path_cookies = None
 cookies_list = cookies(path_cookies)
 
 
-def instanciar_browser(headless: bool = True) -> Browser:
-    if headless:
-        with sync_playwright() as p:
-            navegador = p.chromium.launch(headless=True)
-        return navegador
-    else:
-        with sync_playwright() as p:
-            navegador = p.chromium.launch(headless=False)
+async def instanciar_browser(headless: bool = True) -> Browser:
+    with async_playwright() as p:
+        navegador = await p.chromium.launch(headless=headless)
         return navegador
 
 
@@ -33,14 +28,14 @@ async def criar_contexto(navegador: Browser) -> BrowserContext:
             "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
         }
     )
-    contexto.add_cookies(cookies=cookies_list)
+    await contexto.add_cookies(cookies=cookies_list)
     return contexto
 
 
 async def criar_aba(contexto: BrowserContext) -> Page:
     aba = contexto.new_page()
     stealth = Stealth()
-    stealth.apply_stealth_sync(aba)
+    stealth.apply_stealth_async(aba)
     aba.add_init_script("""
         # 1. Remove completamente o rastro de automação do webdriver
         Object.defineProperty(navigator, 'webdriver', { get: () => undefined });

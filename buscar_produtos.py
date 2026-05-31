@@ -10,8 +10,7 @@ from browser_create import criar_contexto, criar_aba
 produtos = []
 
 
-async def buscar(item: str, browser: Browser, paginas: int = 1):
-    aba = await criar_aba(await criar_contexto(browser))
+async def buscar(item: str, aba: Page, paginas: int = 1):
     await controlar_aba.carregar_pagina(aba=aba, url=f'https://lista.mercadolivre.com.br/{item}')
     await controlar_aba.scroll_pagina(aba=aba, quantidade=10)
     for _ in range(paginas):
