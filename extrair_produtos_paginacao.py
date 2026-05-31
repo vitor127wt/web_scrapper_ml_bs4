@@ -5,6 +5,16 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 
+def extrair_links_paginas(html: str):
+    json_limpo_raw = extrair_json_limpo(html=html)
+    json_dict = json.loads(json_limpo_raw)
+    lista_links_dict = json_dict['appProps']['sharedState']['search']['pagination']['pagination_nodes_url']
+    links = {}
+    for item in lista_links_dict:
+        links[f'url-{item['value']}'] = item['url']
+    return links
+
+
 def gerar_lista_produtos(html: str):
     json_limpo_raw = extrair_json_limpo(html=html)
     produtos_dict_raw = gerar_dicionario_de_produtos(json_limpo_raw)
@@ -227,16 +237,21 @@ def pegar_internacional(produtos_raw: list, id: str):
     return False
 
 
-caminho = Path(__file__).resolve().parent / 'testes'
+# caminho = Path(__file__).resolve().parent / 'testes'
 
-html_f = caminho / 'html.html'
+# html_f = caminho / 'html.html'
 
-json_f = caminho / 'teste.json'
+# json_f = caminho / 'teste.json'
+# json_f_links = caminho / 'teste_links.json'
 
-with open(html_f, 'r', encoding='utf-8') as f:
-    html = f.read()
 
-lista = gerar_lista_produtos(html)
+# with open(html_f, 'r', encoding='utf-8') as f:
+#     html = f.read()
 
-with open(json_f, 'w', encoding='utf-8') as j:
-    json.dump(lista, j, ensure_ascii=False)
+# lista = gerar_lista_produtos(html)
+# lista_links = extrair_links_paginas(html)
+
+# with open(json_f, 'w', encoding='utf-8') as j:
+#     json.dump(lista, j, ensure_ascii=False)
+# with open(json_f_links, 'w', encoding='utf-8') as j:
+#     json.dump(lista_links, j, ensure_ascii=False)
