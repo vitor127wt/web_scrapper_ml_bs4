@@ -10,14 +10,14 @@ path_cookies = r'.\cookies\cookies_ML.json'
 cookies_list = cookies(path_cookies)
 
 
-async def instanciar_browser(headless: bool = True) -> Browser:
-    with async_playwright() as p:
-        navegador = await p.chromium.launch(headless=headless)
-        return navegador
+# async def instanciar_browser(headless: bool = True) -> Browser:
+#     with async_playwright() as p:
+#         navegador = await p.chromium.launch(headless=headless)
+#         return navegador
 
 
 async def criar_contexto(navegador: Browser) -> BrowserContext:
-    contexto = navegador.new_context(
+    contexto = await navegador.new_context(
         user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
         viewport={"width": 1920, "height": 1080},
         extra_http_headers={
@@ -32,10 +32,10 @@ async def criar_contexto(navegador: Browser) -> BrowserContext:
 
 
 async def criar_aba(contexto: BrowserContext) -> Page:
-    aba = contexto.new_page()
+    aba = await contexto.new_page()
     stealth = Stealth()
-    stealth.apply_stealth_async(aba)
-    aba.add_init_script("""
+    await stealth.apply_stealth_async(aba)
+    await aba.add_init_script("""
         # 1. Remove completamente o rastro de automação do webdriver
         Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
 

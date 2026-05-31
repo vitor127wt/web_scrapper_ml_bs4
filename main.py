@@ -1,4 +1,5 @@
-from browser_create import instanciar_browser, path_cookies
+from browser_create import path_cookies
+from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 import threading
 import queue
@@ -53,11 +54,13 @@ async def nova_task(browser, item, nome_task, porta_thread):
     abrir_terminal(f'Terminal de busca: {nome_task}', porta_task)
     await asyncio.sleep(0.4)
 
-    contexto = browser_create.criar_contexto(browser)
+    contexto = await browser_create.criar_contexto(browser)
 
-    aba = browser_create.criar_aba(contexto)
+    aba = await browser_create.criar_aba(contexto)
 
-    produtos = buscar(item=item, aba=aba)
+    produtos = await buscar(item=item, aba=aba)
+
+    print_log(porta_task, '##FECHAR##')
 
 
 async def main_thread_loop(nome_thread, item_inicial):
@@ -68,46 +71,50 @@ async def main_thread_loop(nome_thread, item_inicial):
 
     print_log(porta_thread, f'{nome_thread} INICIADA')
 
-    navegador = browser_create.instanciar_browser()
+    # navegador = browser_create.instanciar_browser()
 
-    tarefas_ativas = set()
+    async with async_playwright() as p:
+        navegador = await p.chromium.launch(headless=True)
 
-    task_count = 0
+        tarefas_ativas = set()
 
-    proximo_item = item_inicial
+        task_count = 0
 
-    while proximo_item is not None or tarefas_ativas:
+        proximo_item = item_inicial
 
-        while proximo_item is not None and len(tarefas_ativas) < LIMITE_TASKS:
-            task_count += 1
-            nome_task = f'Task-{task_count} da {nome_thread}'
+        while proximo_item is not None or tarefas_ativas:
 
-            with lock_sys:
-                buscas_ativas_global += 1
-                if buscas_ativas_global >= CONCORRENCIA_GLOBAL and threads_ativas < MAX_THREADS and not fila_busca.empty():
-                    checar_e_iniciar_thread()
+            while proximo_item is not None and len(tarefas_ativas) < LIMITE_TASKS:
+                task_count += 1
+                nome_task = f'Task-{task_count} da {nome_thread}'
 
-            print_log(porta_thread, f'Iniciando em paralelo: {nome_task}')
+                with lock_sys:
+                    buscas_ativas_global += 1
+                    if buscas_ativas_global >= CONCORRENCIA_GLOBAL and threads_ativas < MAX_THREADS and not fila_busca.empty():
+                        checar_e_iniciar_thread()
 
-            t = asyncio.create_task(
-                nova_task(navegador, proximo_item, nome_task, porta_thread))
-            tarefas_ativas.add(t)
+                print_log(porta_thread, f'Iniciando em paralelo: {nome_task}')
 
-            t.add_done_callback(lambda task: tarefas_ativas.remove(task))
-            t.add_done_callback(lambda task: fila_busca.task_done())
+                t = asyncio.create_task(
+                    nova_task(navegador, proximo_item, nome_task, porta_thread))
+                tarefas_ativas.add(t)
 
-            try:
-                proximo_item = fila_busca.get_nowait()
-            except queue.Empty:
-                proximo_item = None
+                t.add_done_callback(lambda task: tarefas_ativas.remove(task))
+                t.add_done_callback(lambda task: fila_busca.task_done())
 
-        await asyncio.sleep(0.5)
+                try:
+                    proximo_item = fila_busca.get_nowait()
+                except queue.Empty:
+                    proximo_item = None
 
-        if proximo_item is None and tarefas_ativas:
-            await asyncio.gather(*tarefas_ativas, return_exceptions=True)
+            await asyncio.sleep(0.5)
 
-    print_log(porta_thread, 'Tarefas concluidas, encerrando Thread')
-    await navegador.close()
+            if proximo_item is None and tarefas_ativas:
+                await asyncio.gather(*tarefas_ativas, return_exceptions=True)
+
+        print_log(porta_thread, 'Tarefas concluidas, encerrando Thread')
+        print_log(porta_thread, '##FECHAR##')
+        await navegador.close()
 
     with lock_sys:
         threads_ativas -= 1

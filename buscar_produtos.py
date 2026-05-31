@@ -10,17 +10,20 @@ produtos = []
 
 
 async def buscar(item: str, aba: Page, paginas: int = 1):
+    global produtos
     await controlar_aba.carregar_pagina(aba=aba, url=f'https://lista.mercadolivre.com.br/{item}')
     await controlar_aba.scroll_pagina(aba=aba, quantidade=10)
     for _ in range(paginas):
-        raw_html = BeautifulSoup(aba.content(), 'html.parser')
+        pure_html = await aba.content()
+        raw_html = BeautifulSoup(pure_html, 'html.parser')
         cards = extrair_cards(raw_html)
         extrair_produtos(cards=cards)
+    return produtos
 
 
 def extrair_produtos(cards):
     global produtos
-    card_content = conteudo_card(card)
+    # card_content = conteudo_card(card)
     for card in cards:
         produto = {
             'imagem': imagem_extrair(card),
@@ -35,6 +38,7 @@ def extrair_produtos(cards):
             'criterio_desconto': None,
 
         }
+        print(produto)
         produtos.append(produto)
 
 
@@ -51,5 +55,5 @@ def conteudo_card(card: _AtMostOneTag):
 
 
 def imagem_extrair(card: _AtMostOneTag):
-    imagem_element = card.find('img', class_='poly-component_picture')
+    imagem_element = card.find('img', class_='poly-component__picture')
     return imagem_element.get('src')
