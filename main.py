@@ -117,9 +117,9 @@ def nova_task(session: requests.Session, item_inicial, nome_task, porta_thread, 
             url_atual = None
     if produtos_final:
         log(socket_janela, 'Exportando para XLSX')
-        exportar_xlsx(produtos_final, nome=f'{item_inicial[0]}-{nome_task}')
+        exportar_xlsx(produtos_final, nome=f'{item_inicial[0]}')
         log(socket_janela,
-            f'Exportado com sucesso, arquivo: {item_inicial}-{nome_task}.xlsx criado.')
+            f'Exportado com sucesso, arquivo: {item_inicial}.xlsx criado.')
     if not erro:
         log(porta_thread, f'Task: {nome_task} concluida')
         time.sleep(5)
