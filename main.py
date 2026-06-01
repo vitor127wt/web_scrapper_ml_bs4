@@ -108,7 +108,7 @@ def nova_task(session: requests.Session, item_inicial, nome_task, porta_thread, 
                     produtos_final.append(produto)
                 url_atual = extrair_link_proxima_pagina(html=html)
                 pagina_atual += 1
-                time.sleep(random(2, 4))
+                time.sleep(random.uniform(2, 4))
             else:
                 log(socket_janela, f'BLOQUEIO: {resposta.status_code}')
                 url_atual = None
