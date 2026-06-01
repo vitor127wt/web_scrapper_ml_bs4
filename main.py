@@ -210,33 +210,21 @@ def checar_e_iniciar_thread():
 
 
 if __name__ == '__main__':
-    # while True:
-    #     item = input('Digite um item para busca: ')
-    #     if item.lower() in ['sair', 'exit', 'close', 'fechar']:
-    #         break
-    #     while True:
-    #         paginas = input('Quantas paginas deseja buscar ?: ')
-    #         if paginas.isdigit():
-    #             break
-    #         else:
-    #             print('Por favor, digite somente numeros')
-
-    #     if item:
-    #         item_formatado = item.replace(' ', '-')
-
-    #         busca = (item_formatado, int(paginas))
-
-    #         fila_busca.put(busca)
-    #         print(f'Item {item_formatado} inserido na fila')
     while True:
-        itens = [('gpu', 1),
-                 ('memoria ram', 1),
-                 ('fonte', 1),
-                 ('water cooler', 1)]
-        for item in itens:
-            item[0].replace(' ', '-')
-            fila_busca.put(item)
-        with lock_sys:
-            if threads_ativas == 0:
-                checar_e_iniciar_thread()
-        input('Espera ai porra')
+        item = input('Digite um item para busca: ')
+        if item.lower() in ['sair', 'exit', 'close', 'fechar']:
+            break
+        while True:
+            paginas = input('Quantas paginas deseja buscar ?: ')
+            if paginas.isdigit():
+                break
+            else:
+                print('Por favor, digite somente numeros')
+
+        if item:
+            item_formatado = item.replace(' ', '-')
+
+            busca = (item_formatado, int(paginas))
+
+            fila_busca.put(busca)
+            print(f'Item {item_formatado} inserido na fila')
