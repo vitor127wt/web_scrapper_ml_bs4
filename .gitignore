@@ -4,3 +4,5 @@
 *.json
 __pycache__/
 testes/
+tokens_controle/
+relatorios/

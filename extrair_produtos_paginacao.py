@@ -1,21 +1,21 @@
 import json
 import re
-import pprint
 from pathlib import Path
 from bs4 import BeautifulSoup
 
 
-def extrair_links_paginas(html: str):
+def extrair_link_proxima_pagina(html: str):
     json_limpo_raw = extrair_json_limpo(html=html)
     json_dict = json.loads(json_limpo_raw)
-    lista_links_dict = json_dict['appProps']['sharedState']['search']['pagination']['pagination_nodes_url']
-    links = {}
-    for item in lista_links_dict:
-        links[f'url-{item['value']}'] = item['url']
-    return links
+    try:
+        link = json_dict['appProps']['sharedState']['search']['pagination']['next_page']['url']
+    except Exception as e:
+        print(e)
+    return link
 
 
 def gerar_lista_produtos(html: str):
+
     json_limpo_raw = extrair_json_limpo(html=html)
     produtos_dict_raw = gerar_dicionario_de_produtos(json_limpo_raw)
     urls_imagens = extrair_links_imagens(json_limpo_raw)
@@ -29,8 +29,10 @@ def extrair_json_limpo(html: str):
 
     script_tag = soup.find(
         'script', id='__NORDIC_RENDERING_CTX__')
-
+    if script_tag is None:
+        raise TypeError('script_tag é None')
     conteudo_script_string = script_tag.string
+
     match = re.search(r'_n\.ctx\.r\s*=\s*({)', conteudo_script_string)
 
     if not match:
