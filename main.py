@@ -229,8 +229,10 @@ if __name__ == '__main__':
     #         fila_busca.put(busca)
     #         print(f'Item {item_formatado} inserido na fila')
     while True:
-        itens = [('gpu', 1), ('memoria ram', 1),
-                 ('fonte', 1), ('water cooler', 1)]
+        itens = [('gpu', 1),
+                 ('memoria ram', 1),
+                 ('fonte', 1),
+                 ('water cooler', 1)]
         for item in itens:
             item[0].replace(' ', '-')
             fila_busca.put(item)
