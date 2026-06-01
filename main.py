@@ -228,3 +228,7 @@ if __name__ == '__main__':
 
             fila_busca.put(busca)
             print(f'Item {item_formatado} inserido na fila')
+
+            with lock_sys:
+                if threads_ativas == 0:
+                    checar_e_iniciar_thread()
