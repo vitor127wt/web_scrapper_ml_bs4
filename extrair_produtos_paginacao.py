@@ -74,8 +74,6 @@ def gerar_dicionario_de_produtos(json_limpo_str: str) -> dict:
             for item in componente:
                 produto_tmp[f'{item['type']}'] = item
             produtos_list.append(produto_tmp)
-    with open('prova.json', 'w', encoding='utf-8') as f:
-        json.dump(produtos_list, f, ensure_ascii=False)
     return produtos_list
 
 
