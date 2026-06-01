@@ -20,18 +20,10 @@ lock_sys = threading.Lock()
 
 threads_ativas = 0
 total_threads_criadas = 0
-
 buscas_ativas_global = 0
 
 PASTA_COOKIES = Path('cookies')
-PASTA_TOKENS = Path('tokens_controle')
-PASTA_TOKENS.mkdir(exist_ok=True)
-
-for token_velho in PASTA_TOKENS.glob('*.txt'):
-    try:
-        token_velho.unlink()
-    except:
-        pass
+COOKIE = 'lista.mercadolivre.com.br_cookies.json'
 
 
 def abrir_terminal(titulo, porta_log):
@@ -136,7 +128,7 @@ def main_thread_loop(nome_thread, item_inicial):
     log(socket_janela, f'{nome_thread} INICIADA')
     with requests.Session() as session:
         log(socket_janela, 'Nova sessão iniciada')
-        cookies_path = PASTA_COOKIES / 'lista.mercadolivre.com.br_cookies.json'
+        cookies_path = PASTA_COOKIES / COOKIE
         cookies_raw = cookies(cookies_path)
         for cookie in cookies_raw:
             name = cookie.get('name')
